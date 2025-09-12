@@ -47,6 +47,8 @@ cloakprompt redact --file app.log --config security.yaml
 
 ## 📖 Detailed Usage
 
+![img.png](document/image.png)
+
 ### Command Structure
 
 ```bash
