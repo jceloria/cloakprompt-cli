@@ -89,7 +89,7 @@ def redact(
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress all output except errors"),
     summary: bool = typer.Option(False, "--summary", "-s", help="Show pattern summary and exit"),
-    details: bool = typer.Option(False, "--details", "-d", help="Show detailed redaction information")
+    details: bool = typer.Option(True, "--details", "-d", help="Show detailed redaction information")
 ):
     """
     Redact sensitive information from text, files, or stdin.
@@ -184,6 +184,7 @@ def redact(
                 console.print("[yellow]ℹ No sensitive information found[/yellow]")
         
         # Print redacted text to stdout
+        logger.info(f"Redacted {redacted_text} sensitive items from text")
         print(redacted_text)
         
         # Show detailed information if requested
