@@ -147,7 +147,7 @@ def redact(
             logger.info(f"Redacted {total_redactions} sensitive items from text")
             print(redacted_text)
         else:
-            print(f'Redacted completed successfully check directory {os.path.dirname(file_name)}.')
+            print(f'Redaction completed successfully. Check the directory {os.path.dirname(file_name)}.')
         
         # Show detailed information if requested
         if details and redactions and not quiet:
