@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloakprompt"
+version = "1.0.0"
+description = "Secure text redaction for LLM interactions"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Kushagra Tandon", email = "kushagra.tandon.124@gmail.com"}
+]
+keywords = [
+    "security",
+    "redaction",
+    "cli",
+    "llm",
+    "privacy",
+    "data-protection"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Text Processing",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "typer>=0.9.0",
+    "PyYAML>=6.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Kushagratandon12/cloakprompt-cli"
+Documentation = "https://github.com/Kushagratandon12/cloakprompt-cli#readme"
+Repository = "https://github.com/Kushagratandon12/cloakprompt-cli"
+"Bug Reports" = "https://github.com/Kushagratandon12/cloakprompt-cli/issues"
+
+[project.scripts]
+cloakprompt = "cloakprompt.cli:main"
+
+[tool.setuptools]
+packages = ["cloakprompt"]
+
+[tool.setuptools.package-data]
+cloakprompt = ["config/*.yaml"]
+

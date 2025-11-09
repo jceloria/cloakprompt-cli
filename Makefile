@@ -25,14 +25,11 @@ help:
 
 # Install production dependencies
 install:
-	pip install -r requirements.txt
 	pip install -e .
 
 # Install development dependencies
 install-dev:
-	pip install -r requirements.txt
-	pip install -e .
-	pip install pytest pytest-cov black flake8 mypy
+	pip install -e ".[dev]"
 
 # Run tests
 test:

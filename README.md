@@ -1,5 +1,7 @@
 # 🔒 CloakPrompt CLI
 
+[![PyPI version](https://badge.fury.io/py/cloakprompt.svg)](https://badge.fury.io/py/cloakprompt)
+
 **Secure text redaction for LLM interactions**
 
 CloakPrompt is a command-line tool that automatically detects and redacts sensitive information (API keys, passwords, emails, IPs, etc.) from text before sending it to Large Language Models (LLMs). This helps protect your privacy and security when using AI services.
@@ -22,11 +24,11 @@ CloakPrompt is a command-line tool that automatically detects and redacts sensit
 git clone https://github.com/Kushagratandon12/cloakprompt-cli.git
 cd cloakprompt-cli
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Install the package
+# Install the package with dependencies
 pip install -e .
+
+# Or install with development dependencies
+pip install -e ".[dev]"
 ```
 
 ### Basic Usage
@@ -206,8 +208,8 @@ pytest --cov=cloakprompt
 │   │   └── file_loader.py # Input handling
 │   └── config/           # Configuration files
 │       └── regex_cleanup.yaml
-├── requirements.txt       # Dependencies
-├── setup.py              # Installation script
+├── pyproject.toml        # Project configuration and dependencies
+├── setup.py              # Installation script (minimal, for backward compatibility)
 └── README.md             # This file
 ```
 
