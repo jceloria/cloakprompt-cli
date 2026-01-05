@@ -11,7 +11,6 @@ import logging
 from pathlib import Path
 from typing import Optional, Union
 from rich.console import Console
-from rich.panel import Panel
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -73,7 +72,7 @@ class InputLoader:
                     content = file.read()
                 logger.warning(f"File {file_path} read with system encoding (not UTF-8)")
             except Exception as e:
-                raise UnicodeDecodeError(f"Failed to read file {file_path} with any encoding: {e}")
+                raise type(e)(f"Failed to read file {file_path} with any encoding: {e}") from e
 
         if not content.strip():
             logger.warning(f"File {file_path} is empty")
