@@ -42,8 +42,8 @@ lint:
 
 # Format code
 format:
-	black cloakprompt/ --line-length=88
-	black test_example.py --line-length=88
+	black cloakprompt/ --line-length=120
+	black test_example.py --line-length=120
 
 # Run demo script
 demo:
