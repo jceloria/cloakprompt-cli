@@ -82,6 +82,8 @@ def redact(
     """
     Redact sensitive information from text, files, or stdin.
 
+    If no input option is provided (--text, --file, --stdin), reads from stdin.
+
     Configuration is loaded from:
     1. --config option if provided
     2. XDG config location (~/.config/cloakprompt-cli/config.yaml) if exists
@@ -91,6 +93,7 @@ def redact(
         cloakprompt redact --text "my secret key is AKIA1234567890ABCDEF"
         cloakprompt redact --file config.log
         echo "secret data" | cloakprompt redact --stdin
+        echo "secret data" | cloakprompt redact  # Also works without --stdin flag
         cloakprompt redact --file app.log --config security.yaml
     """
     try:
@@ -124,7 +127,7 @@ def redact(
                 print_summary(console, redactor, config_path)
             return
 
-        # Load input
+        # Load input - automatically use stdin if no other input option is provided
         try:
             with Progress(
                 SpinnerColumn(),
@@ -134,11 +137,20 @@ def redact(
             ) as progress:
                 progress.add_task("Loading input...", total=None)
 
-                input_text = InputLoader.load_input(
-                    text=text,
-                    file_path=file,
-                    use_stdin=stdin
-                )
+                # Check if any input option is provided, if not, use stdin
+                input_sources_provided = sum([bool(text), bool(file), stdin])
+
+                if input_sources_provided == 0:
+                    # No input option provided, automatically use stdin
+                    logger.debug("No input option provided, reading from stdin")
+                    input_text = InputLoader.load_stdin()
+                else:
+                    # Use the explicitly specified input source
+                    input_text = InputLoader.load_input(
+                        text=text,
+                        file_path=file,
+                        use_stdin=stdin
+                    )
 
                 progress.update(task_id, description="Input loaded")
 
@@ -155,8 +167,6 @@ def redact(
                 disable=quiet
             ) as progress:
                 progress.add_task("Redacting sensitive information...", total=None)
-
-                # config_path is already None if no config is found
 
                 if details:
                     result = redactor.redact_with_details(input_text, config_path)
