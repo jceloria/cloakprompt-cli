@@ -7,7 +7,7 @@ using regex patterns loaded from configuration files.
 
 import re
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from .parser import ConfigParser
 
 logger = logging.getLogger(__name__)
@@ -27,14 +27,14 @@ class TextRedactor:
         self.compiled_patterns: List[Tuple[re.Pattern, str, str]] = []
         self._compile_patterns()
 
-    def _compile_patterns(self, custom_config_path: str = None) -> None:
+    def _compile_patterns(self, custom_config_path: Optional[str] = None) -> None:
         """
         Compile regex patterns for efficient matching.
 
         Args:
             custom_config_path: Optional path to custom configuration file
         """
-        patterns = self.config_parser.get_regex_patterns(custom_config_path)
+        patterns: List[Dict[str, Any]] = self.config_parser.get_regex_patterns(custom_config_path)
         self.compiled_patterns.clear()
 
         for pattern_info in patterns:
@@ -53,7 +53,7 @@ class TextRedactor:
 
         logger.info(f"Successfully compiled {len(self.compiled_patterns)} regex patterns")
 
-    def redact_text(self, text: str, custom_config_path: str = None) -> str:
+    def redact_text(self, text: str, custom_config_path: Optional[str] = None) -> str:
         """
         Redact sensitive information from the given text.
 
@@ -94,7 +94,7 @@ class TextRedactor:
 
         return redacted_text
 
-    def redact_with_details(self, text: str, custom_config_path: str = None) -> Dict[str, Any]:
+    def redact_with_details(self, text: str, custom_config_path: Optional[str] = None) -> Dict[str, Any]:
         """
         Redact text and return detailed information about what was redacted.
 
@@ -105,8 +105,18 @@ class TextRedactor:
         Returns:
             Dictionary containing redacted text and redaction details
         """
-        if custom_config_path:
-            self._compile_patterns(custom_config_path)
+        # Get patterns based on config
+        patterns: List[Dict[str, Any]] = self.config_parser.get_regex_patterns(custom_config_path)
+
+        # Compile patterns locally for this operation
+        compiled_patterns = []
+        for pattern_info in patterns:
+            try:
+                compiled_regex = re.compile(pattern_info['regex'], re.IGNORECASE | re.MULTILINE)
+                compiled_patterns.append((compiled_regex, pattern_info['placeholder'], pattern_info['name']))
+            except re.error as e:
+                logger.warning(f"Invalid regex pattern '{pattern_info.get('name', 'unknown')}': {e}")
+                continue
 
         if not text:
             return {
@@ -119,7 +129,7 @@ class TextRedactor:
         redactions = []
         total_redactions = 0
 
-        for pattern, placeholder, name in self.compiled_patterns:
+        for pattern, placeholder, name in compiled_patterns:
             try:
                 # Find all matches
                 matches = list(pattern.finditer(redacted_text))
@@ -150,7 +160,7 @@ class TextRedactor:
             'total_redactions': total_redactions
         }
 
-    def get_pattern_summary(self, custom_config_path: str = None) -> Dict[str, Any]:
+    def get_pattern_summary(self, custom_config_path: Optional[str] = None) -> Dict[str, Any]:
         """
         Get a summary of all available redaction patterns.
 
@@ -160,7 +170,7 @@ class TextRedactor:
         Returns:
             Dictionary containing pattern summary information
         """
-        patterns = self.config_parser.get_regex_patterns(custom_config_path)
+        patterns: List[Dict[str, Any]] = self.config_parser.get_regex_patterns(custom_config_path)
 
         summary = {
             'total_patterns': len(patterns),
