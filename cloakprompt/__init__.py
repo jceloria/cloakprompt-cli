@@ -24,7 +24,7 @@ from .utils.file_loader import InputLoader
 
 __all__ = [
     "ConfigParser",
-    "TextRedactor", 
+    "TextRedactor",
     "InputLoader",
     "__version__",
     "__author__",

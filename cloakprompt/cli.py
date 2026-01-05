@@ -49,7 +49,7 @@ def redact(
 ):
     """
     Redact sensitive information from text, files, or stdin.
-    
+
     Examples:
         cloakprompt redact --text "my secret key is AKIA1234567890ABCDEF"
         cloakprompt redact --file config.log
@@ -59,11 +59,11 @@ def redact(
     try:
         # Setup logging
         setup_logging(verbose, quiet)
-        
+
         # Print banner (unless quiet mode)
         if not quiet:
             print_banner(console)
-        
+
         # Initialize components
         with Progress(
             SpinnerColumn(),
@@ -72,18 +72,18 @@ def redact(
             disable=quiet
         ) as progress:
             task_id = progress.add_task("Initializing redactor...", total=None)
-            
+
             config_parser = ConfigParser()
             redactor = TextRedactor(config_parser)
-            
+
             progress.update(task_id, description="Redactor ready")
-        
+
         # Show pattern summary if requested
         if summary:
             if not quiet:
                 print_summary(console, redactor, config)
             return
-        
+
         # Load input
         try:
             with Progress(
@@ -93,19 +93,19 @@ def redact(
                 disable=quiet
             ) as progress:
                 progress.add_task("Loading input...", total=None)
-                
+
                 input_text = InputLoader.load_input(
                     text=text,
                     file_path=file,
                     use_stdin=stdin
                 )
-                
+
                 progress.update(task_id, description="Input loaded")
-                
+
         except Exception as e:
             console.print(f"[red]Error loading input: {e}[/red]")
             raise typer.Exit(1)
-        
+
         # Perform redaction
         try:
             with Progress(
@@ -115,7 +115,7 @@ def redact(
                 disable=quiet
             ) as progress:
                 progress.add_task("Redacting sensitive information...", total=None)
-                
+
                 if details:
                     result = redactor.redact_with_details(input_text, config)
                     redacted_text = result['redacted_text']
@@ -129,36 +129,36 @@ def redact(
                     redacted_text = redactor.redact_text(input_text, config)
                     redactions = []
                     total_redactions = 0
-                
+
                 progress.update(task_id, description="Redaction complete")
-                
+
         except Exception as e:
             console.print(f"[red]Error during redaction: {e}[/red]")
             raise typer.Exit(1)
-        
+
         # Output results
         if not quiet:
             if total_redactions > 0:
                 console.print(f"[green]✓ Redacted {total_redactions} sensitive items[/green]")
             else:
                 console.print("[yellow]ℹ No sensitive information found[/yellow]")
-        
+
         # Print redacted text to stdout
         if not quiet and not file:
             logger.info(f"Redacted {total_redactions} sensitive items from text")
             print(redacted_text)
         elif file and not quiet:
             print(f'Redaction completed successfully. Check the directory {os.path.dirname(file_name)}.')
-        
+
         # Show detailed information if requested
         if details and redactions and not quiet:
             console.print("\n[bold]Redaction Details:[/bold]")
-            
+
             table = Table(show_header=True, header_style="bold magenta")
             table.add_column("Pattern", style="cyan")
             table.add_column("Position", style="green")
             table.add_column("Replacement", style="yellow")
-            
+
             for redaction in redactions:
                 position = f"{redaction['start_pos']}-{redaction['end_pos']}"
                 table.add_row(
@@ -166,9 +166,9 @@ def redact(
                     position,
                     redaction['replacement']
                 )
-            
+
             console.print(table)
-        
+
     except KeyboardInterrupt:
         console.print("\n[yellow]Operation cancelled by user[/yellow]")
         raise typer.Exit(130)
@@ -188,12 +188,12 @@ def patterns(
     try:
         setup_logging(verbose)
         print_banner(console)
-        
+
         config_parser = ConfigParser()
         redactor = TextRedactor(config_parser)
-        
+
         print_summary(console, redactor, config)
-        
+
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
