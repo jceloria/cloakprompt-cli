@@ -7,6 +7,7 @@ A command-line tool for redacting sensitive information from text before sending
 
 import logging
 import os
+from pathlib import Path
 from typing import Optional, cast
 
 import typer
@@ -18,6 +19,7 @@ from cloakprompt.core.parser import ConfigParser
 from cloakprompt.utils.utils import setup_logging, print_banner, print_summary
 from cloakprompt.core.redactor import TextRedactor
 from cloakprompt.utils.file_loader import InputLoader
+from cloakprompt.utils.xdg_config import XDGConfig
 from cloakprompt import __version__
 
 # Initialize Typer app
@@ -37,6 +39,35 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def find_config_path(config_arg: Optional[str]) -> Optional[str]:
+    """
+    Find configuration file path with XDG fallback.
+
+    Args:
+        config_arg: Config path from command line argument
+
+    Returns:
+        Config file path if found, None otherwise
+    """
+    # If config argument is provided, use it
+    if config_arg:
+        config_path = Path(config_arg)
+        if config_path.exists():
+            return str(config_path)
+        else:
+            logger.warning(f"Config file not found: {config_arg}")
+            return None
+
+    # Otherwise, try to find config in XDG locations
+    xdg_config_path = XDGConfig.find_config_file()
+    if xdg_config_path:
+        logger.info(f"Using config from XDG location: {xdg_config_path}")
+        return str(xdg_config_path)
+
+    # No config found
+    return None
+
+
 @app.command()
 def redact(
     text: Optional[str] = typer.Option(None, "--text", "-t", help="Text to redact"),
@@ -51,6 +82,11 @@ def redact(
     """
     Redact sensitive information from text, files, or stdin.
 
+    Configuration is loaded from:
+    1. --config option if provided
+    2. XDG config location (~/.config/cloakprompt-cli/config.yaml) if exists
+    3. Default built-in patterns otherwise
+
     Examples:
         cloakprompt redact --text "my secret key is AKIA1234567890ABCDEF"
         cloakprompt redact --file config.log
@@ -64,6 +100,9 @@ def redact(
         # Print banner (unless quiet mode)
         if not quiet:
             print_banner(console)
+
+        # Find config file
+        config_path = find_config_path(config)
 
         # Initialize components
         with Progress(
@@ -82,7 +121,7 @@ def redact(
         # Show pattern summary if requested
         if summary:
             if not quiet:
-                print_summary(console, redactor, config)
+                print_summary(console, redactor, config_path)
             return
 
         # Load input
@@ -117,10 +156,10 @@ def redact(
             ) as progress:
                 progress.add_task("Redacting sensitive information...", total=None)
 
-                config_str = config if config is not None else ""
+                # config_path is already None if no config is found
 
                 if details:
-                    result = redactor.redact_with_details(input_text, config_str)
+                    result = redactor.redact_with_details(input_text, config_path)
                     redacted_text = result['redacted_text']
                     redactions = result['redactions']
                     total_redactions = result['total_redactions']
@@ -131,7 +170,7 @@ def redact(
                         with open(output_path, 'w', encoding='utf-8') as output_file:
                             output_file.write(redacted_text)
                 else:
-                    redacted_text = redactor.redact_text(input_text, config_str)
+                    redacted_text = redactor.redact_text(input_text, config_path)
                     redactions = []
                     total_redactions = 0
 
@@ -200,10 +239,90 @@ def patterns(
         config_parser = ConfigParser()
         redactor = TextRedactor(config_parser)
 
-        print_summary(console, redactor, config)
+        # Find config file
+        config_path = find_config_path(config)
+        print_summary(console, redactor, config_path)
 
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def config_path():
+    """Show where CloakPrompt looks for configuration files."""
+    console.print("[bold]Configuration Search Paths:[/bold]")
+
+    # Current directory
+    console.print(f"Current directory: {Path.cwd() / 'config.yaml'}")
+
+    # XDG paths
+    xdg_config = XDGConfig()
+    config_dirs = xdg_config.get_config_dirs()
+
+    for i, config_dir in enumerate(config_dirs):
+        prefix = "→ " if i == 0 else "  "
+        app_config_path = config_dir / xdg_config.APP_NAME / xdg_config.CONFIG_FILENAME
+        console.print(f"{prefix}{app_config_path}")
+
+    # Check if config exists
+    found_config = xdg_config.find_config_file()
+    if found_config:
+        console.print(f"\n[green]✓ Config found at: {found_config}[/green]")
+    else:
+        console.print("\n[yellow]ℹ No config file found in XDG locations[/yellow]")
+
+    # Default config location for writing
+    default_path = xdg_config.get_default_config_path()
+    console.print(f"\n[bold]Default config location (for writing):[/bold]")
+    console.print(f"→ {default_path}")
+
+
+@app.command()
+def init_config(
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing config file")
+):
+    """Create a default configuration file in XDG location."""
+    try:
+        import yaml
+
+        # Get default config location
+        xdg_config = XDGConfig()
+        # Create config directory if it doesn't exist
+        xdg_config.ensure_config_dir_exists()
+        config_path = xdg_config.get_default_config_path()
+
+        # Check if config already exists
+        if config_path.exists() and not force:
+            console.print(f"[yellow]Config already exists at: {config_path}[/yellow]")
+            console.print("Use --force to overwrite")
+            raise typer.Exit(1)
+
+        # Create default config
+        default_config = {
+            "patterns": {
+                "CUSTOM_PATTERNS": {
+                    "description": "Your custom patterns",
+                    "rules": [
+                        {
+                            "name": "example_domain",
+                            "placeholder": "<REDACT_EXAMPLE_DOMAIN>",
+                            "regex": "example\\.com"
+                        }
+                    ]
+                }
+            }
+        }
+
+        # Write config file
+        with open(config_path, 'w', encoding='utf-8') as f:
+            yaml.dump(default_config, f, default_flow_style=False, sort_keys=False)
+
+        console.print(f"[green]✓ Created default config at: {config_path}[/green]")
+        console.print("\nYou can now edit this file to add your own patterns.")
+
+    except Exception as e:
+        console.print(f"[red]Error creating config: {e}[/red]")
         raise typer.Exit(1)
 
 

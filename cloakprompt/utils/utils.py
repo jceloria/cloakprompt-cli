@@ -31,7 +31,7 @@ def print_banner(console):
 def print_summary(console, redactor: TextRedactor, custom_config: Optional[str] = None):
     """Print a summary of available redaction patterns."""
     try:
-        summary = redactor.get_pattern_summary(custom_config if custom_config is not None else "default")
+        summary = redactor.get_pattern_summary(custom_config)
 
         table = Table(title="Redaction Patterns Summary", show_header=True, header_style="bold magenta")
         table.add_column("Category", style="cyan", no_wrap=True)

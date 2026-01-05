@@ -17,6 +17,7 @@ help:
 	@echo "  demo         Run demonstration script"
 	@echo ""
 	@echo "CLI:"
+	@echo "  init-config  Initialize configuration"
 	@echo "  run-cli      Run the CLI tool directly"
 	@echo ""
 	@echo "Maintenance:"
@@ -48,6 +49,10 @@ format:
 # Run demo script
 demo:
 	python test_example.py
+
+# Generate a configuration file
+init-config:
+	python -m cloakprompt.cli init-config
 
 # Run CLI directly
 run-cli:
