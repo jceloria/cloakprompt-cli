@@ -4,7 +4,6 @@ YAML configuration parser for cloakprompt.
 This module handles loading and merging regex rules from YAML configuration files.
 """
 
-import os
 import yaml
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -26,9 +25,11 @@ class ConfigParser:
         if default_config_path is None:
             # Default to the config file in the package
             package_dir = Path(__file__).parent.parent
-            default_config_path = package_dir / "config" / "regex_cleanup.yaml"
+            config_path = package_dir / "config" / "regex_cleanup.yaml"
+        else:
+            config_path = Path(default_config_path)
 
-        self.default_config_path = Path(default_config_path)
+        self.default_config_path = config_path
         self.default_config = self._load_yaml(self.default_config_path)
 
     def _load_yaml(self, file_path: Path) -> Dict[str, Any]:
@@ -87,7 +88,7 @@ class ConfigParser:
                 if 'rules' in category_rules and 'rules' in merged[category]:
                     # Create a map of rule names for easy lookup
                     existing_rules = {rule.get('name', ''): rule
-                                    for rule in merged[category]['rules']}
+                                      for rule in merged[category]['rules']}
 
                     for new_rule in category_rules['rules']:
                         rule_name = new_rule.get('name', '')
