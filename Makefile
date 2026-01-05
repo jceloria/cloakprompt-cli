@@ -37,7 +37,7 @@ test:
 
 # Run linting
 lint:
-	flake8 cloakprompt/ --max-line-length=88 --extend-ignore=E203,W503
+	flake8 cloakprompt/ --max-line-length=120 --extend-ignore=E203,W503
 	mypy cloakprompt/ --ignore-missing-imports
 
 # Format code
