@@ -7,7 +7,7 @@ A command-line tool for redacting sensitive information from text before sending
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, cast
 
 import typer
 from rich.console import Console
@@ -35,6 +35,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
 
 @app.command()
 def redact(
@@ -116,17 +117,21 @@ def redact(
             ) as progress:
                 progress.add_task("Redacting sensitive information...", total=None)
 
+                config_str = config if config is not None else ""
+
                 if details:
-                    result = redactor.redact_with_details(input_text, config)
+                    result = redactor.redact_with_details(input_text, config_str)
                     redacted_text = result['redacted_text']
                     redactions = result['redactions']
                     total_redactions = result['total_redactions']
                     if file is not None:
-                        file_name, file_extension = os.path.splitext(file)
-                        with open(f"{file_name}_redacted{file_extension}", 'w', encoding='utf-8') as file:
-                            file.write(redacted_text)
+                        input_file_path = cast(str, file)
+                        file_name, file_extension = os.path.splitext(input_file_path)
+                        output_path = f"{file_name}_redacted{file_extension}"
+                        with open(output_path, 'w', encoding='utf-8') as output_file:
+                            output_file.write(redacted_text)
                 else:
-                    redacted_text = redactor.redact_text(input_text, config)
+                    redacted_text = redactor.redact_text(input_text, config_str)
                     redactions = []
                     total_redactions = 0
 
@@ -144,11 +149,14 @@ def redact(
                 console.print("[yellow]ℹ No sensitive information found[/yellow]")
 
         # Print redacted text to stdout
-        if not quiet and not file:
+        if not quiet and file is None:
             logger.info(f"Redacted {total_redactions} sensitive items from text")
             print(redacted_text)
-        elif file and not quiet:
-            print(f'Redaction completed successfully. Check the directory {os.path.dirname(file_name)}.')
+        elif file is not None and not quiet:
+            input_file_path = cast(str, file)
+            file_name, _ = os.path.splitext(input_file_path)
+            directory = os.path.dirname(file_name) or "current directory"
+            print(f'Redaction completed successfully. Check the {directory}.')
 
         # Show detailed information if requested
         if details and redactions and not quiet:
