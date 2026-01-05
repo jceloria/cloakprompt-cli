@@ -4,6 +4,7 @@ YAML configuration parser for cloakprompt.
 This module handles loading and merging regex rules from YAML configuration files.
 """
 
+import copy
 import yaml
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -66,8 +67,7 @@ class ConfigParser:
             logger.error(f"Failed to load configuration file {file_path}: {e}")
             raise
 
-    def _merge_configs(self, base_config: Dict[str, Any],
-                       override_config: Dict[str, Any]) -> Dict[str, Any]:
+    def _merge_configs(self, base_config, override_config):
         """
         Merge override configuration into base configuration.
 
@@ -78,29 +78,34 @@ class ConfigParser:
         Returns:
             Merged configuration dictionary
         """
-        merged = base_config.copy()
+        merged = copy.deepcopy(base_config)
 
-        for category, category_rules in override_config.items():
-            if category not in merged:
-                merged[category] = category_rules
-            else:
-                # Merge rules within the category
-                if 'rules' in category_rules and 'rules' in merged[category]:
-                    # Create a map of rule names for easy lookup
-                    existing_rules = {rule.get('name', ''): rule
-                                      for rule in merged[category]['rules']}
+        for key, value in override_config.items():
 
-                    for new_rule in category_rules['rules']:
-                        rule_name = new_rule.get('name', '')
-                        if rule_name in existing_rules:
-                            # Update existing rule
-                            existing_rules[rule_name].update(new_rule)
+            if key == "patterns":
+                merged.setdefault("patterns", {})
+
+                for category, category_data in value.items():
+                    if category not in merged["patterns"]:
+                        merged["patterns"][category] = category_data
+                    else:
+                        if "rules" in category_data and "rules" in merged["patterns"][category]:
+                            existing_rules = {
+                                r.get("name"): r
+                                for r in merged["patterns"][category]["rules"]
+                            }
+
+                            for rule in category_data["rules"]:
+                                name = rule.get("name")
+                                if name in existing_rules:
+                                    existing_rules[name].update(rule)
+                                else:
+                                    merged["patterns"][category]["rules"].append(rule)
                         else:
-                            # Add new rule
-                            merged[category]['rules'].append(new_rule)
-                else:
-                    # If no rules to merge, just override the entire category
-                    merged[category] = category_rules
+                            merged["patterns"][category] = category_data
+
+            else:
+                merged[key] = value
 
         return merged
 
@@ -144,7 +149,7 @@ class ConfigParser:
         config = self.get_config(custom_config_path)
         patterns = []
 
-        for category, category_data in config.get('patterns').items():
+        for category, category_data in config.get('patterns', {}).items():
             if isinstance(category_data, dict) and 'rules' in category_data:
                 for rule in category_data['rules']:
                     if 'regex' in rule and 'placeholder' in rule:
