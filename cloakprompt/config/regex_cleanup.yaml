@@ -98,7 +98,7 @@ patterns:
     rules:
       - name: base64_secret
         placeholder: <REDACT_BASE64_SECRET>
-        regex: '\b([A-Za-z0-9+/]{20,}={0,2})\b'
+        regex: '(?:secret|key|token|certificate|data)\s*[:=]\s*["'']?([A-Za-z0-9+/]{20,}={0,2})["'']?'
 
   CI_CD_CONFIGS:
     description: "Regex for Jenkins, GitLab CI, GitHub Actions secrets"
